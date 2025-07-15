@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linear Probing com Remoção Inversa</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .step {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .step-title {
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+        .hash-table {
+            display: flex;
+            flex-direction: column;
+            border: 2px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 20px 0;
+            background: white;
+        }
+        .table-row {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+        }
+        .table-row:last-child {
+            border-bottom: none;
+        }
+        .index {
+            width: 50px;
+            padding: 12px;
+            background: #e9ecef;
+            font-weight: bold;
+            text-align: center;
+            border-right: 1px solid #ddd;
+        }
+        .value {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            font-weight: bold;
+            min-height: 20px;
+        }
+        .occupied {
+            background: #ffecb3;
+            color: #f57c00;
+        }
+        .empty {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        .highlight {
+            background: #ffcdd2 !important;
+            color: #d32f2f !important;
+            animation: pulse 0.5s ease-in-out;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .calculation {
+            background: #e8f5e8;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-family: monospace;
+            border-left: 3px solid #4caf50;
+        }
+        .operation {
+            color: #d32f2f;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .controls {
+            text-align: center;
+            margin: 30px 0;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 0 10px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .functions {
+            background: #fff3e0;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 2px solid #ff9800;
+        }
+        .functions h3 {
+            color: #e65100;
+            margin-top: 0;
+        }
+        .function-def {
+            font-family: monospace;
+            background: white;
+            padding: 8px;
+            border-radius: 4px;
+            margin: 8px 0;
+            border-left: 3px solid #ff9800;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Linear Probing com Remoção Inversa</h1>
+        
+        <div class="functions">
+            <h3>Funções Utilizadas:</h3>
+            <div class="function-def">h₁(k) = k mod 10</div>
+            <div class="function-def">h(k, i) = (h₁(k) + i) mod m, retornando q</div>
+            <div class="function-def">g(k, q) = (q - h₁(k)) mod m, retornando i</div>
+        </div>
+
+        <div class="controls">
+            <button id="prevBtn" onclick="previousStep()">← Anterior</button>
+            <button id="nextBtn" onclick="nextStep()">Próximo →</button>
+            <button onclick="reset()">Reiniciar</button>
+        </div>
+
+        <div id="currentStep"></div>
+        <div id="hashTable"></div>
+        <div id="explanation"></div>
+    </div>
+
+    <script>
+        let currentStepIndex = 0;
+        let table = new Array(10).fill(null);
+        
+        const steps = [
+            {
+                title: "Estado Inicial",
+                operation: "Tabela vazia",
+                description: "Tabela hash com 10 posições (0-9), todas vazias inicialmente.",
+                table: new Array(10).fill(null),
+                calculation: "m = 10 (tamanho da tabela)"
+            },
+            {
+                title: "Inserção: 74",
+                operation: "INSERT(74)",
+                description: "Inserindo elemento 74",
+                table: [null, null, null, null, 74, null, null, null, null, null],
+                calculation: "h₁(74) = 74 mod 10 = 4\nh(74, 0) = (4 + 0) mod 10 = 4\nPosição 4 está vazia → insere 74 na posição 4"
+            },
+            {
+                title: "Inserção: 43",
+                operation: "INSERT(43)",
+                description: "Inserindo elemento 43",
+                table: [null, null, null, 43, 74, null, null, null, null, null],
+                calculation: "h₁(43) = 43 mod 10 = 3\nh(43, 0) = (3 + 0) mod 10 = 3\nPosição 3 está vazia → insere 43 na posição 3"
+            },
+            {
+                title: "Inserção: 93",
+                operation: "INSERT(93)",
+                description: "Inserindo elemento 93",
+                table: [null, null, null, 43, 74, 93, null, null, null, null],
+                calculation: "h₁(93) = 93 mod 10 = 3\nh(93, 0) = (3 + 0) mod 10 = 3 → ocupada\nh(93, 1) = (3 + 1) mod 10 = 4 → ocupada\nh(93, 2) = (3 + 2) mod 10 = 5 → vazia\nInsere 93 na posição 5"
+            },
+            {
+                title: "Inserção: 18",
+                operation: "INSERT(18)",
+                description: "Inserindo elemento 18",
+                table: [null, null, null, 43, 74, 93, null, null, 18, null],
+                calculation: "h₁(18) = 18 mod 10 = 8\nh(18, 0) = (8 + 0) mod 10 = 8\nPosição 8 está vazia → insere 18 na posição 8"
+            },
+            {
+                title: "Inserção: 82",
+                operation: "INSERT(82)",
+                description: "Inserindo elemento 82",
+                table: [null, null, 82, 43, 74, 93, null, null, 18, null],
+                calculation: "h₁(82) = 82 mod 10 = 2\nh(82, 0) = (2 + 0) mod 10 = 2\nPosição 2 está vazia → insere 82 na posição 2"
+            },
+            {
+                title: "Inserção: 38",
+                operation: "INSERT(38)",
+                description: "Inserindo elemento 38",
+                table: [null, null, 82, 43, 74, 93, null, null, 18, 38],
+                calculation: "h₁(38) = 38 mod 10 = 8\nh(38, 0) = (8 + 0) mod 10 = 8 → ocupada\nh(38, 1) = (8 + 1) mod 10 = 9 → vazia\nInsere 38 na posição 9"
+            },
+            {
+                title: "Inserção: 92",
+                operation: "INSERT(92)",
+                description: "Inserindo elemento 92",
+                table: [null, null, 82, 43, 74, 93, 92, null, 18, 38],
+                calculation: "h₁(92) = 92 mod 10 = 2\nh(92, 0) = (2 + 0) mod 10 = 2 → ocupada\nh(92, 1) = (2 + 1) mod 10 = 3 → ocupada\nh(92, 2) = (2 + 2) mod 10 = 4 → ocupada\nh(92, 3) = (2 + 3) mod 10 = 5 → ocupada\nh(92, 4) = (2 + 4) mod 10 = 6 → vazia\nInsere 92 na posição 6"
+            },
+            {
+                title: "Estado após inserções",
+                operation: "Tabela completa",
+                description: "Estado da tabela após todas as inserções, conforme mostrado na figura (a)",
+                table: [null, null, 82, 43, 74, 93, 92, null, 18, 38],
+                calculation: "Todas as inserções concluídas. Tabela pronta para remoções."
+            },
+            {
+                title: "Remoção: 43",
+                operation: "REMOVE(43)",
+                description: "Removendo elemento 43 da posição 3",
+                table: [null, null, 82, null, 74, 93, 92, null, 18, 38],
+                calculation: "Localiza 43 na posição 3\nRemove 43 → posição 3 fica vazia\nAgora aplicamos a função inversa para reorganizar"
+            },
+            {
+                title: "Reorganização: 93",
+                operation: "Reorganizando 93",
+                description: "Elemento 93 é movido da posição 5 para posição 3",
+                table: [null, null, 82, 93, 74, null, 92, null, 18, 38],
+                calculation: "Para 93 na posição 5:\ng(93, 5) = (5 - 3) mod 10 = 2\nComo g(93, 5) = 2 > 0, 93 pode ser movido\nMove 93 da posição 5 para posição 3\nh(93, 0) = (3 + 0) mod 10 = 3 ✓"
+            },
+            {
+                title: "Reorganização: 92",
+                operation: "Reorganizando 92",
+                description: "Elemento 92 é movido da posição 6 para posição 5",
+                table: [null, null, 82, 93, 74, 92, null, null, 18, 38],
+                calculation: "Para 92 na posição 6:\ng(92, 6) = (6 - 2) mod 10 = 4\nComo g(92, 6) = 4 > 0, 92 pode ser movido\nMove 92 da posição 6 para posição 5\nh(92, 3) = (2 + 3) mod 10 = 5 ✓"
+            },
+            {
+                title: "Estado Final",
+                operation: "Remoção completa",
+                description: "Estado final após remoção e reorganização, conforme mostrado na figura (b)",
+                table: [null, null, 82, 93, 74, 92, null, null, 18, 38],
+                calculation: "Remoção de 43 concluída com sucesso!\nElementos reorganizados mantendo a propriedade do linear probing."
+            }
+        ];
+
+        function renderTable(tableState, highlight = -1) {
+            const tableDiv = document.getElementById('hashTable');
+            let html = '<div class="hash-table">';
+            
+            for (let i = 0; i < tableState.length; i++) {
+                html += '<div class="table-row">';
+                html += `<div class="index">${i}</div>`;
+                
+                const value = tableState[i];
+                const cellClass = value !== null ? 'occupied' : 'empty';
+                const highlightClass = i === highlight ? 'highlight' : '';
+                
+                html += `<div class="value ${cellClass} ${highlightClass}">`;
+                html += value !== null ? value : '';
+                html += '</div>';
+                html += '</div>';
+            }
+            
+            html += '</div>';
+            tableDiv.innerHTML = html;
+        }
+
+        function showStep(index) {
+            const step = steps[index];
+            
+            document.getElementById('currentStep').innerHTML = `
+                <div class="step">
+                    <div class="step-title">${step.title}</div>
+                    <div class="operation">${step.operation}</div>
+                    <div>${step.description}</div>
+                </div>
+            `;
+            
+            document.getElementById('explanation').innerHTML = `
+                <div class="calculation">
+                    <strong>Cálculo:</strong><br>
+                    ${step.calculation.replace(/\n/g, '<br>')}
+                </div>
+            `;
+            
+            renderTable(step.table);
+            
+            // Update button states
+            document.getElementById('prevBtn').disabled = index === 0;
+            document.getElementById('nextBtn').disabled = index === steps.length - 1;
+        }
+
+        function nextStep() {
+            if (currentStepIndex < steps.length - 1) {
+                currentStepIndex++;
+                showStep(currentStepIndex);
+            }
+        }
+
+        function previousStep() {
+            if (currentStepIndex > 0) {
+                currentStepIndex--;
+                showStep(currentStepIndex);
+            }
+        }
+
+        function reset() {
+            currentStepIndex = 0;
+            showStep(currentStepIndex);
+        }
+
+        // Initialize
+        showStep(0);
+    </script>
+</body>
+</html>
